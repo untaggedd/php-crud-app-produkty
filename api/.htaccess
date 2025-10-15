@@ -1,0 +1,6 @@
+RewriteEngine On
+
+# Przekieruj wszystkie żądania, które nie są plikami ani folderami
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ entities.php?path=$1 [QSA,L]

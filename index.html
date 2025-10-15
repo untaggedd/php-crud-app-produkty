@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Aplikacja CRUD - Produkty</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; }
+        form { background: #f4f4f4; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        input, textarea { width: calc(100% - 20px); padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; }
+        button { padding: 10px 15px; border: none; background-color: #007BFF; color: white; cursor: pointer; }
+        li { list-style-type: none; border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        ul { padding: 0; }
+        .delete-btn { background-color: #dc3545; margin-left: 5px;}
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <form id="product-form">
+            <h3>Dodaj / Edytuj produkt</h3>
+            <input type="hidden" id="product-id">
+            <input type="text" id="name" placeholder="Nazwa produktu" required>
+            <textarea id="description" placeholder="Opis produktu"></textarea>
+            <input type="number" id="price" placeholder="Cena" step="0.01" required>
+            <button type="submit">Zapisz</button>
+        </form>
+
+        <div id="products-list">
+            <h3>Lista produktów</h3>
+            <ul id="list"></ul>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = '/crud-produkty/api/entities';
+        const productForm = document.getElementById('product-form');
+        const productList = document.getElementById('list');
+        const productIdField = document.getElementById('product-id');
+
+        // Funkcja do pobierania i wyświetlania wszystkich produktów
+        async function fetchProducts() {
+            const response = await fetch(apiUrl);
+            const products = await response.json();
+            productList.innerHTML = '';
+            products.forEach(product => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div>
+                        <strong>${product.name}</strong> - ${product.price} PLN
+                        <p>${product.description || ''}</p>
+                    </div>
+                    <div>
+                        <button onclick="editProduct(${product.id}, '${product.name}', '${product.description || ''}', ${product.price})">Edytuj</button>
+                        <button class="delete-btn" onclick="deleteProduct(${product.id})">Usuń</button>
+                    </div>`;
+                productList.appendChild(li);
+            });
+        }
+
+        // Obsługa formularza (tworzenie lub aktualizacja)
+        productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = productIdField.value;
+            const productData = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                price: document.getElementById('price').value,
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${apiUrl}/${id}` : apiUrl;
+
+            await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(productData)
+            });
+            
+            productForm.reset();
+            productIdField.value = '';
+            fetchProducts();
+        });
+
+        // Funkcja do wypełniania formularza do edycji
+        function editProduct(id, name, description, price) {
+            productIdField.value = id;
+            document.getElementById('name').value = name;
+            document.getElementById('description').value = description;
+            document.getElementById('price').value = price;
+        }
+
+        // Funkcja do usuwania produktu
+        async function deleteProduct(id) {
+            if (confirm('Czy na pewno chcesz usunąć ten produkt?')) {
+                await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+                fetchProducts();
+            }
+        }
+
+        // Początkowe załadowanie produktów
+        fetchProducts();
+    </script>
+
+</body>
+</html>
