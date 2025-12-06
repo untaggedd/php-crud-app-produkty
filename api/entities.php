@@ -1,5 +1,15 @@
 <?php
-require 'db.php';
+session_start(); // Wznawiamy sesję
+
+// Sprawdzamy, czy użytkownik jest zalogowany
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401); // Unauthorized (Nieautoryzowany)
+    echo json_encode(["message" => "Musisz być zalogowany"]);
+    exit();
+}
+
+require '../db.php';
+
 
 $method = $_SERVER['REQUEST_METHOD'];
 $path = isset($_GET['path']) ? explode('/', trim($_GET['path'],'/')) : [];
@@ -36,9 +46,9 @@ switch ($method) {
             exit();
         }
 
-        $sql = "INSERT INTO products (name, description, price) VALUES (?, ?, ?)";
+        $sql = "INSERT INTO products (name, description, price, sku, is_available) VALUES (?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$data['name'], $data['description'], $data['price']]);
+        $stmt->execute([$data['name'], $data['description'], $data['price'], $data['sku'], $data['is_available']]);
         http_response_code(201);
         echo json_encode(["message" => "Produkt został dodany", "id" => $conn->lastInsertId()]);
         break;
@@ -52,9 +62,9 @@ switch ($method) {
                 exit();
             }
 
-            $sql = "UPDATE products SET name=?, description=?, price=? WHERE id=?";
+            $sql = "UPDATE products SET name=?, description=?, price=?, sku=?, is_available=? WHERE id=?";
             $stmt = $conn->prepare($sql);
-            $stmt->execute([$data['name'], $data['description'], $data['price'], $id]);
+            $stmt->execute([$data['name'], $data['description'], $data['price'], $data['sku'], $data['is_available'], $id]);
 
             if ($stmt->rowCount() > 0) {
                  echo json_encode(["message" => "Produkt został zaktualizowany"]);
