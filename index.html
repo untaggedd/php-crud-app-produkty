@@ -22,6 +22,12 @@
             <input type="text" id="name" placeholder="Nazwa produktu" required>
             <textarea id="description" placeholder="Opis produktu"></textarea>
             <input type="number" id="price" placeholder="Cena" step="0.01" required>
+            <input type="text" id="sku" placeholder="SKU (artykuł)">
+            <label style="display: block; margin-bottom: 10px;">
+                <input type="checkbox" id="is_available" checked>
+                Produkt dostępny
+            </label>
+                   
             <button type="submit">Zapisz</button>
         </form>
 
@@ -45,14 +51,18 @@
             products.forEach(product => {
                 const li = document.createElement('li');
                 li.innerHTML = `
-                    <div>
-                        <strong>${product.name}</strong> - ${product.price} PLN
-                        <p>${product.description || ''}</p>
-                    </div>
-                    <div>
-                        <button onclick="editProduct(${product.id}, '${product.name}', '${product.description || ''}', ${product.price})">Edytuj</button>
-                        <button class="delete-btn" onclick="deleteProduct(${product.id})">Usuń</button>
-                    </div>`;
+        <div>
+            <strong>${product.name}</strong> - ${product.price} PLN
+            <p>${product.description || ''}</p>
+            <p style="color: grey; font-size: 0.9em;">
+                SKU: ${product.sku || 'Brak'} | 
+                Status: ${product.is_available == 1 ? 'Dostępny' : 'Niedostępny'}
+            </p>
+        </div>
+        <div>
+            <button onclick="editProduct(${product.id}, '${product.name}', '${product.description || ''}', ${product.price}, '${product.sku || ''}', ${product.is_available})">Edytuj</button>
+            <button class="delete-btn" onclick="deleteProduct(${product.id})">Usuń</button>
+        </div>`;
                 productList.appendChild(li);
             });
         }
@@ -62,10 +72,12 @@
             e.preventDefault();
             const id = productIdField.value;
             const productData = {
-                name: document.getElementById('name').value,
-                description: document.getElementById('description').value,
-                price: document.getElementById('price').value,
-            };
+            name: document.getElementById('name').value,
+            description: document.getElementById('description').value,
+            price: document.getElementById('price').value,
+            sku: document.getElementById('sku').value, // Dodano
+            is_available: document.getElementById('is_available').checked ? 1 : 0, // Dodano
+};
 
             const method = id ? 'PUT' : 'POST';
             const url = id ? `${apiUrl}/${id}` : apiUrl;
@@ -82,11 +94,13 @@
         });
 
         // Funkcja do wypełniania formularza do edycji
-        function editProduct(id, name, description, price) {
+        function editProduct(id, name, description, price, sku, is_available) {
             productIdField.value = id;
             document.getElementById('name').value = name;
             document.getElementById('description').value = description;
             document.getElementById('price').value = price;
+            document.getElementById('sku').value = sku;
+            document.getElementById('is_available').checked = (is_available == 1);
         }
 
         // Funkcja do usuwania produktu
