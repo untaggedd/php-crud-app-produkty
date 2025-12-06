@@ -18,14 +18,23 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- База данных: `produkty_db`
+-- Baza danych: `produkty_db`
 --
 
 -- --------------------------------------------------------
 
 --
--- Структура таблицы `products`
---
+-- Struktura tabeli `users`
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE, -- Login musi być unikalny
+    password VARCHAR(255) NOT NULL,       -- Hasło będzie przechowywane jako hash
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Data utworzenia konta
+);
+
+-- 
+-- Struktura tabeli `products`
 
 CREATE TABLE `products` (
   `id` int(11) NOT NULL,
@@ -40,29 +49,21 @@ CREATE TABLE `products` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Дамп данных таблицы `products`
+-- Dump danych tabeli `products`
 --
 
 INSERT INTO `products` (`id`, `name`, `price`, `description`, `created_at`, `stock_quantity`, `category`, `sku`, `is_available`) VALUES
 (4, 'Laptop', 2800.00, 'Omen 13x7', '2025-10-15 19:05:13', 0, NULL, NULL, 1);
 
 --
--- Индексы сохранённых таблиц
---
-
---
--- Индексы таблицы `products`
+-- Indeksy tabeli `products`
 --
 ALTER TABLE `products`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `sku` (`sku`);
 
 --
--- AUTO_INCREMENT для сохранённых таблиц
---
-
---
--- AUTO_INCREMENT для таблицы `products`
+-- AUTO_INCREMENT dla `products`
 --
 ALTER TABLE `products`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;

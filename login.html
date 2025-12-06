@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Logowanie</title>
+
+<style>
+
+    :root {
+        --bg-color: #ffffff;
+        --text-color: #333333;
+        --container-bg: #f4f4f4;
+        --input-bg: #ffffff;
+        --border-color: #ddd;
+    }
+
+    body.dark-mode {
+        --bg-color: #121212;
+        --text-color: #e0e0e0;
+        --container-bg: #1e1e1e;
+        --input-bg: #2c2c2c;
+        --border-color: #444;
+    }
+
+    body {
+        font-family: sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s, color 0.3s;
+        display: flex;
+        justify-content: center; 
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+
+    form {
+        background: var(--container-bg);
+        padding: 30px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        width: 100%;
+        max-width: 400px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        box-sizing: border-box;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+    }
+
+    button {
+        width: 100%;
+        padding: 10px;
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button:hover { background-color: #0056b3; }
+
+
+    .theme-toggle-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 5px;
+        width: auto; 
+    }
+    .theme-toggle-btn:hover {
+        background-color: var(--container-bg);
+    }
+</style>
+
+</head>
+<body>
+
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Zmień motyw">🌗</button>
+
+    <form id="login-form">
+        <h2>Zaloguj się</h2>
+        <input type="text" id="login-username" placeholder="Login" required>
+        <input type="password" id="login-password" placeholder="Hasło" required>
+        <button type="submit">Zaloguj</button>
+        
+        <div id="message" class="message"></div>
+
+        <a href="register.html">Nie masz konta? Zarejestruj się</a>
+    </form>
+
+    <script>
+        const loginUrl = 'api/login.php'; 
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const messageBox = document.getElementById('message');
+
+            try {
+                const response = await fetch(loginUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageBox.textContent = 'Logowanie udane! Przekierowanie...';
+                    messageBox.className = 'message success';
+                    // Przekierowanie do głównej aplikacji po 1 sekundzie
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    messageBox.textContent = result.message;
+                    messageBox.className = 'message error';
+                }
+            } catch (error) {
+                console.error('Błąd:', error);
+                messageBox.textContent = 'Błąd połączenia.';
+                messageBox.className = 'message error';
+            }
+        });
+
+
+    
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+
+    //Funkcja "Dark Mode"
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        
+        if (document.body.classList.contains('dark-mode')) {
+            localStorage.setItem('theme', 'dark');
+        } else {
+            localStorage.setItem('theme', 'light');
+        }
+    }
+    </script>
+
+</body>
+</html>

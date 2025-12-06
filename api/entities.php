@@ -1,5 +1,15 @@
 <?php
-require 'db.php';
+session_start(); // Wznawiamy sesję
+
+// Sprawdzamy, czy użytkownik jest zalogowany
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401); // Unauthorized (Nieautoryzowany)
+    echo json_encode(["message" => "Musisz być zalogowany"]);
+    exit();
+}
+
+require '../db.php';
+
 
 $method = $_SERVER['REQUEST_METHOD'];
 $path = isset($_GET['path']) ? explode('/', trim($_GET['path'],'/')) : [];
