@@ -1,10 +1,10 @@
 <?php
-session_start(); // Musimy wznowić sesję, żeby ją zniszczyć
+session_start(); // musimy wznowić sesję, żeby ją zniszczyć
 
-// Usuwamy wszystkie zmienne sesyjne
+// usuwamy wszystkie zmienne sesyjne
 $_SESSION = [];
 
-// Niszczymy sesję
+// niszczymy sesję
 session_destroy();
 
 header("Content-Type: application/json");

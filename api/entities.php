@@ -1,97 +1,93 @@
 <?php
-session_start(); // Wznawiamy sesję
+// api/entities.php
 
-// Sprawdzamy, czy użytkownik jest zalogowany
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401); // Unauthorized (Nieautoryzowany)
-    echo json_encode(["message" => "Musisz być zalogowany"]);
-    exit();
-}
+// ini_set('display_errors', 1);
+// error_reporting(E_ALL);
 
-require '../db.php';
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
 
+require __DIR__ . '/db.php'; 
 
 $method = $_SERVER['REQUEST_METHOD'];
-$path = isset($_GET['path']) ? explode('/', trim($_GET['path'],'/')) : [];
-$id = isset($path[1]) && is_numeric($path[1]) ? intval($path[1]) : null;
+$input = json_decode(file_get_contents("php://input"), true);
 
-switch ($method) {
-    case 'GET':
-        if ($id) {
-            // GET /entities/{id}
-            $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
-            $stmt->execute([$id]);
-            $product = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($product) {
-                echo json_encode($product);
-            } else {
-                http_response_code(404);
-                echo json_encode(["message" => "Produkt nie został znaleziony"]);
-            }
-        } else {
-            // GET /entities
-            $stmt = $conn->query("SELECT * FROM products ORDER BY id DESC");
-            $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode($products);
-        }
-        break;
+// === GET: otrzymujemy liste ===
+if ($method === 'GET') {
+    try {
+        $stmt = $conn->prepare("SELECT * FROM products ORDER BY id DESC");
+        $stmt->execute();
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($products);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(["message" => "Błąd: " . $e->getMessage()]);
+    }
+}
 
-    case 'POST':
-        $data = json_decode(file_get_contents('php://input'), true);
-
-        // Walidacja danych
-        if (empty($data['name']) || !isset($data['price'])) {
-            http_response_code(400);
-            echo json_encode(["message" => "Nazwa i cena produktu są wymagane"]);
-            exit();
-        }
-
-        $sql = "INSERT INTO products (name, description, price, sku, is_available) VALUES (?, ?, ?, ?, ?)";
+// === POST: dodać nowe ===
+elseif ($method === 'POST') {
+    if (empty($input['name']) || empty($input['price'])) {
+        http_response_code(400);
+        echo json_encode(["message" => "Brak wymaganych danych"]);
+        exit;
+    }
+    try {
+        $sql = "INSERT INTO products (name, description, price, sku, is_available) VALUES (:name, :description, :price, :sku, :is_available)";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$data['name'], $data['description'], $data['price'], $data['sku'], $data['is_available']]);
-        http_response_code(201);
-        echo json_encode(["message" => "Produkt został dodany", "id" => $conn->lastInsertId()]);
-        break;
+        $stmt->execute([
+            ':name' => $input['name'],
+            ':description' => $input['description'] ?? '',
+            ':price' => $input['price'],
+            ':sku' => $input['sku'] ?? '',
+            ':is_available' => $input['is_available'] ?? 1
+        ]);
+        echo json_encode(["message" => "Dodano pomyślnie"]);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(["message" => "Błąd: " . $e->getMessage()]);
+    }
+}
 
-    case 'PUT':
-        if ($id) {
-            $data = json_decode(file_get_contents('php://input'), true);
-             if (empty($data['name']) || !isset($data['price'])) {
-                http_response_code(400);
-                echo json_encode(["message" => "Nazwa i cena produktu są wymagane"]);
-                exit();
-            }
+// === PUT: update istniejące ===
+elseif ($method === 'PUT') {
+    if (empty($input['id'])) {
+        http_response_code(400);
+        echo json_encode(["message" => "Brak ID produktu"]);
+        exit;
+    }
+    try {
+        $sql = "UPDATE products SET name=:name, description=:description, price=:price, sku=:sku, is_available=:is_available WHERE id=:id";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':id' => $input['id'],
+            ':name' => $input['name'],
+            ':description' => $input['description'] ?? '',
+            ':price' => $input['price'],
+            ':sku' => $input['sku'] ?? '',
+            ':is_available' => $input['is_available'] ?? 1
+        ]);
+        echo json_encode(["message" => "Zaktualizowano pomyślnie"]);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(["message" => "Błąd: " . $e->getMessage()]);
+    }
+}
 
-            $sql = "UPDATE products SET name=?, description=?, price=?, sku=?, is_available=? WHERE id=?";
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([$data['name'], $data['description'], $data['price'], $data['sku'], $data['is_available'], $id]);
-
-            if ($stmt->rowCount() > 0) {
-                 echo json_encode(["message" => "Produkt został zaktualizowany"]);
-            } else {
-                http_response_code(404);
-                echo json_encode(["message" => "Nie znaleziono produktu lub nie wprowadzono zmian"]);
-            }
-        }
-        break;
-
-    case 'DELETE':
-        if ($id) {
-            $stmt = $conn->prepare("DELETE FROM products WHERE id = ?");
-            $stmt->execute([$id]);
-
-            if ($stmt->rowCount() > 0) {
-                echo json_encode(["message" => "Produkt został usunięty"]);
-            } else {
-                http_response_code(404);
-                echo json_encode(["message" => "Nie znaleziono produktu"]);
-            }
-        }
-        break;
-
-    default:
-        http_response_code(405);
-        echo json_encode(["message" => "Metoda niedozwolona"]);
-        break;
+// === DELETE: ===
+elseif ($method === 'DELETE') {
+    if (empty($input['id'])) {
+        http_response_code(400);
+        echo json_encode(["message" => "Brak ID do usunięcia"]);
+        exit;
+    }
+    try {
+        $stmt = $conn->prepare("DELETE FROM products WHERE id = ?");
+        $stmt->execute([$input['id']]);
+        echo json_encode(["message" => "Usunięto pomyślnie"]);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(["message" => "Błąd: " . $e->getMessage()]);
+    }
 }
 ?>

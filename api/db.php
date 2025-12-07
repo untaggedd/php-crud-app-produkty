@@ -1,17 +1,18 @@
 <?php
-header("Content-Type: application/json");
-
-$servername = "localhost";
-$username = "root";
-$password = ""; 
-$dbname = "produkty_db"; // Zmieniona nazwa bazy danych
+$host = 'fdb1032.awardspace.net';
+$db   = '4715152_products';
+$user = '4715152_products';
+$pass = ',gYoY^qi1pRd%Rf@';
 
 try {
-    $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+
+    $conn = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
+    
+
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
 } catch(PDOException $e) {
-    http_response_code(500);
-    echo json_encode(["message" => "Błąd połączenia z bazą: " . $e->getMessage()]);
-    exit();
+
+    die("Bląd połączenia bazy danych: " . $e->getMessage());
 }
 ?>

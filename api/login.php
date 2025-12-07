@@ -1,49 +1,81 @@
 <?php
-require '../db.php';
+// api/login.php
 
-// Rozpoczynamy sesję, aby móc zapisać zalogowanego użytkownika
+// Blądy w konsoli off
+ini_set('display_errors', 0);
+error_reporting(E_ALL); 
+
+header("Content-Type: application/json; charset=UTF-8");
+
+require __DIR__ . '/db.php';
+
 session_start();
 
-header("Content-Type: application/json");
-
+// Method check
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(["message" => "Metoda niedozwolona"]);
+    echo json_encode(["success" => false, "message" => "Metoda niedozwolona"]);
     exit();
 }
 
-$data = json_decode(file_get_contents("php://input"), true);
+// Otrzymujemy JSON
+$input = file_get_contents("php://input");
+$data = json_decode($input, true);
 
+// is valid? JSON
+if (json_last_error() !== JSON_ERROR_NONE) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "Nieprawidłowy format danych"]);
+    exit();
+}
+
+// Check puste pola
 if (empty($data['username']) || empty($data['password'])) {
     http_response_code(400);
-    echo json_encode(["message" => "Podaj login i hasło"]);
+    echo json_encode(["success" => false, "message" => "Podaj login i hasło"]);
     exit();
 }
 
-$username = $data['username'];
+$username = trim($data['username']);
 $password = $data['password'];
 
 try {
-    // Pobieramy użytkownika z bazy danych po loginie
+    // Szukamy użytkownika
     $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username = ?");
     $stmt->execute([$username]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Sprawdzamy czy użytkownik istnieje I czy hasło pasuje do hasha
+    // Sprawdzamy haslo
     if ($user && password_verify($password, $user['password'])) {
         
-        // Zapisujemy ID użytkownika w sesji serwera
+        // Zapisujemy sesje
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
 
-        echo json_encode(["message" => "Zalogowano pomyślnie"]);
+        // Zwracamy sukces
+        http_response_code(200);
+        echo json_encode([
+            "success" => true,
+            "message" => "Zalogowano pomyślnie! Przekierowanie...",
+            "user" => [
+                "id" => $user['id'],
+                "username" => $user['username']
+            ]
+        ]);
     } else {
-        http_response_code(401); // Unauthorized
-        echo json_encode(["message" => "Błędny login lub hasło"]);
+        // Bląd autoryzacji
+        http_response_code(401); 
+        echo json_encode([
+            "success" => false, 
+            "message" => "Błędny login lub hasło"
+        ]);
     }
 
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(["message" => "Błąd serwera: " . $e->getMessage()]);
+    echo json_encode([
+        "success" => false, 
+        "message" => "Błąd serwera: " . $e->getMessage()
+    ]);
 }
 ?>

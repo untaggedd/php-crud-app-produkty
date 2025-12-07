@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Logowanie</title>
-
-<style>
-
+    <style>
     :root {
         --bg-color: #ffffff;
         --text-color: #333333;
@@ -27,13 +25,15 @@
         background-color: var(--bg-color);
         color: var(--text-color);
         transition: background-color 0.3s, color 0.3s;
+        
+        /* --- sekcja wyśrodkowanie --- */
         display: flex;
-        justify-content: center; 
-        align-items: center;
-        height: 100vh;
+        justify-content: center; /* wyśrodkowanie w poziomie (lewo-prawo) */
+        align-items: center;     /* wyśrodkowanie w pionie (góra-dół) */
+        height: 100vh;           /* wysokość na 100% okna przeglądarki */
         margin: 0;
+        /* --------------------------------------------- */
     }
-
 
     form {
         background: var(--container-bg);
@@ -68,6 +68,21 @@
     }
     button:hover { background-color: #0056b3; }
 
+    /* --- style komunikatów --- */
+    .message {
+        margin-top: 15px;
+        text-align: center;
+        font-size: 0.95em;
+        font-weight: bold;
+        min-height: 20px; /* zapobiega skakaniu formularza */
+    }
+    .message.success { 
+        color: #28a745; /* kolor sukcesu */
+    }
+    .message.error { 
+        color: #dc3545; /* kolor blądu */
+    }
+    /* --------------------------------------------------------- */
 
     .theme-toggle-btn {
         position: absolute;
@@ -93,17 +108,26 @@
     <button class="theme-toggle-btn" onclick="toggleTheme()" title="Zmień motyw">🌗</button>
 
     <form id="login-form">
-        <h2>Zaloguj się</h2>
+        <h2 style="text-align: center; margin-bottom: 20px;">Logowanie</h2>
+        
         <input type="text" id="login-username" placeholder="Login" required>
         <input type="password" id="login-password" placeholder="Hasło" required>
+        
         <button type="submit">Zaloguj</button>
         
         <div id="message" class="message"></div>
 
-        <a href="register.html">Nie masz konta? Zarejestruj się</a>
+        <div style="margin-top: 20px; text-align: center; font-size: 0.9em;">
+            <span style="color: #666;">Nie masz konta?</span>
+            <a href="register.html" style="color: #007BFF; text-decoration: none; font-weight: bold; margin-left: 5px;">
+                 Zarejestruj się
+            </a>
+        </div>
+            
     </form>
-
+        
     <script>
+        // upewnić, że ścieżka jest poprawna
         const loginUrl = 'api/login.php'; 
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -113,6 +137,10 @@
             const password = document.getElementById('login-password').value;
             const messageBox = document.getElementById('message');
 
+            // reset komunikatu przed wysłaniem
+            messageBox.textContent = 'Przetwarzanie...';
+            messageBox.className = 'message'; 
+
             try {
                 const response = await fetch(loginUrl, {
                     method: 'POST',
@@ -120,19 +148,36 @@
                     body: JSON.stringify({ username, password })
                 });
 
-                const result = await response.json();
+                const text = await response.text();
+                let result;
+                
+                try {
+                    result = JSON.parse(text);
+                } catch (err) {
+                    throw new Error("Serwer zwrócił błąd (nie JSON): " + text);
+                }
 
-                if (response.ok) {
-                    messageBox.textContent = 'Logowanie udane! Przekierowanie...';
-                    messageBox.className = 'message success';
-                    // Przekierowanie do głównej aplikacji po 1 sekundzie
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 1000);
+                if (response.ok) { 
+                    if (result.success) {
+                        // sukces - ustawiamy tekst i klasę .success (zielony kolor)
+                        messageBox.textContent = result.message; // "Logowanie udane!..."
+                        messageBox.className = 'message success';
+                        
+                        // przekierowanie po 1.5 sekundy
+                        setTimeout(() => {
+                            window.location.href = 'index.php';
+                        }, 1500);
+                    } else {
+                        // błąd logowania (np. złe hasło)
+                        messageBox.textContent = result.message;
+                        messageBox.className = 'message error';
+                    }
                 } else {
-                    messageBox.textContent = result.message;
+                    // inny błąd serwera
+                    messageBox.textContent = result.message || 'Wystąpił błąd.';
                     messageBox.className = 'message error';
                 }
+
             } catch (error) {
                 console.error('Błąd:', error);
                 messageBox.textContent = 'Błąd połączenia.';
@@ -140,13 +185,11 @@
             }
         });
 
-
-    
+    // obsługa ciemnego motywu
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-mode');
     }
 
-    //Funkcja "Dark Mode"
     function toggleTheme() {
         document.body.classList.toggle('dark-mode');
         
